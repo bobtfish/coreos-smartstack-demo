@@ -48,19 +48,19 @@ coreos:
         [Service]
         Type=oneshot
         ExecStart=/usr/bin/docker pull bobtfish/synapse-etcd-amb ; /usr/bin/docker pull bobtfish/app-envshow ; /usr/bin/docker pull bobtfish/nerve-etcd
-     - name: synapse-testapp.service
-       command: start
-       enable: true
-       content: |
-         [Unit]
-         Description=Synapse exposing Test App
-         After=docker.service
-         Requires=docker.service
+    - name: synapse-testapp.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Synapse exposing Test App
+        After=docker.service
+        Requires=docker.service
 
-         [Service]
-         TimeoutStartSec=600
-         ExecStartPre=/usr/bin/docker pull bobtfish/synapse-etcd-amb
-         ExecStart=/usr/bin/docker run --rm --name testapp_synapse -e SYNAPSE_APP=testapp -e SYNAPSE_PORT=8000 -p 8000:8000 bobtfish/synapse-etcd-amb
-         ExecStop=/usr/bin/docker kill testapp_synapse
-         ExecStopPost=/usr/bin/docker rm testapp_synapse
+        [Service]
+        TimeoutStartSec=600
+        ExecStartPre=/usr/bin/docker pull bobtfish/synapse-etcd-amb
+        ExecStart=/bin/bash -c "HOST_IP=$(/bin/ifconfig enp0s8 | awk '/inet /{print $2}') && /usr/bin/docker run --rm --name testapp_synapse -e SYNAPSE_APP=testapp -e SYNAPSE_PORT=8000 -e ETCD_PORT_4001_TCP_ADDR=$HOST_IP -e ETCD_PORT_4001_TCP_PORT=4001 -p 8000:8000 bobtfish/synapse-etcd-amb"
+        ExecStop=/usr/bin/docker kill testapp_synapse
+        ExecStopPost=/usr/bin/docker rm testapp_synapse
 
