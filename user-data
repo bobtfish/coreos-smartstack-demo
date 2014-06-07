@@ -1,0 +1,51 @@
+#cloud-config
+
+users:
+  - name: tdoran
+    sudo: true
+    coreos-ssh-import-github: bobtfish
+
+coreos:
+  etcd:
+      #generate a new token for each unique cluster from https://discovery.etcd.io/new
+      discovery: https://discovery.etcd.io/eb1a8c9448a696a703e9fd53a9502fc3
+      addr: $public_ipv4:4001
+      peer-addr: $public_ipv4:7001
+  units:
+    - name: etcd.service
+      command: start
+    - name: fleet.service
+      command: start
+      runtime: no
+      content: |
+        [Unit]
+        Description=fleet
+
+        [Service]
+        Environment=FLEET_PUBLIC_IP=$public_ipv4
+        ExecStart=/usr/bin/fleet
+    - name: docker-tcp.socket
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Docker Socket for the API
+
+        [Socket]
+        ListenStream=4243
+        Service=docker.service
+        BindIPv6Only=both
+
+        [Install]
+        WantedBy=sockets.target
+    - name: pullcontainers.service
+      command: start
+      runtime: no
+      content: |
+        [Unit]
+        Description=pullcontainers
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/docker pull ubuntu:precise ; /usr/bin/docker pull bobtfish/synapse-etcd-amb ; /usr/bin/docker pull bobtfish/app-envshow ; /usr/bin/docker pull bobtfish/nerve-etcd
+
