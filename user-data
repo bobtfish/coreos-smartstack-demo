@@ -8,7 +8,7 @@ users:
 coreos:
   etcd:
       #generate a new token for each unique cluster from https://discovery.etcd.io/new
-      discovery: https://discovery.etcd.io/eb1a8c9448a696a703e9fd53a9502fc3
+      discovery: https://discovery.etcd.io/4fb7e466bdf6a2f32d7a0b2aff57039f
       addr: $public_ipv4:4001
       peer-addr: $public_ipv4:7001
   units:
@@ -47,5 +47,20 @@ coreos:
 
         [Service]
         Type=oneshot
-        ExecStart=/usr/bin/docker pull ubuntu:precise ; /usr/bin/docker pull bobtfish/synapse-etcd-amb ; /usr/bin/docker pull bobtfish/app-envshow ; /usr/bin/docker pull bobtfish/nerve-etcd
+        ExecStart=/usr/bin/docker pull bobtfish/synapse-etcd-amb ; /usr/bin/docker pull bobtfish/app-envshow ; /usr/bin/docker pull bobtfish/nerve-etcd
+     - name: synapse-testapp.service
+       command: start
+       enable: true
+       content: |
+         [Unit]
+         Description=Synapse exposing Test App
+         After=docker.service
+         Requires=docker.service
+
+         [Service]
+         TimeoutStartSec=600
+         ExecStartPre=/usr/bin/docker pull bobtfish/synapse-etcd-amb
+         ExecStart=/usr/bin/docker run --rm --name testapp_synapse -e SYNAPSE_APP=testapp -e SYNAPSE_PORT=8000 -p 8000:8000 bobtfish/synapse-etcd-amb
+         ExecStop=/usr/bin/docker kill testapp_synapse
+         ExecStopPost=/usr/bin/docker rm testapp_synapse
 
